@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "windows": {
+        "options": {
+            "env": {
+                "PATH": "${workspaceFolder}\\.bin"
+            }
+        }
+    },
+    "tasks": [
+        {
+            "type": "Kha",
+            "target": "Debug HTML5",
+            "problemMatcher": [
+                "$haxe-absolute",
+                //"$haxe"
+            ],
+            "group": "build",
+            "label": "Kha: Build for Debug HTML5",
+        },
+        {
+            "type": "Kha",
+            "target": "HTML5",
+            "group": "build",
+            "label": "Kha: Build for HTML5",
+        },
+        {
+            "label": "Kha: Run Server",
+            "type": "shell",
+            "group": "build",
+            "dependsOn": "Kha: Build for HTML5",
+            "command": "node ${command:kha.findKha}/make --server",
+        }
+    ]
+}
