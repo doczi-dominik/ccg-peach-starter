@@ -9,6 +9,7 @@
     },
     "tasks": [
         {
+            "label": "Kha: Build for Debug HTML5",
             "type": "Kha",
             "target": "Debug HTML5",
             "problemMatcher": [
@@ -16,13 +17,12 @@
                 //"$haxe"
             ],
             "group": "build",
-            "label": "Kha: Build for Debug HTML5",
         },
         {
+            "label": "Kha: Build for HTML5",
             "type": "Kha",
             "target": "HTML5",
             "group": "build",
-            "label": "Kha: Build for HTML5",
         },
         {
             "label": "Kha: Run Server",
