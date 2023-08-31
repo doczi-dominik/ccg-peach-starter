@@ -1,11 +1,9 @@
 package peach;
 
-import peach.Component.ComponentID;
-import haxe.macro.Type.ClassType;
-import haxe.macro.Expr;
-import haxe.macro.Expr.FunctionArg;
-import haxe.macro.Expr.Field;
 import haxe.macro.Context;
+import haxe.macro.Expr;
+import haxe.macro.Type.ClassType;
+import peach.Component.ComponentID;
 
 using haxe.macro.ComplexTypeTools;
 using haxe.macro.ExprTools;
@@ -13,13 +11,13 @@ using haxe.macro.ExprTools;
 class Macros {
 	static inline final PEACH_ID = "_peach_id";
 
-	static var lastComponentID: ComponentID = 0;
+	static var lastComponentID:ComponentID = 0;
 
-	static function getFullName(ct: ClassType) {
+	static function getFullName(ct:ClassType) {
 		return '${ct.pack.join(".")}.${ct.name}';
 	}
 
-	public static function getComponentID(t: haxe.macro.Type): Null<ComponentID> {
+	public static function getComponentID(t:haxe.macro.Type):Null<ComponentID> {
 		switch (t) {
 			case TInst(t, _):
 				final ct = t.get();
@@ -42,7 +40,7 @@ class Macros {
 		}
 	}
 
-	static function addCtor(pos: Position, exprs: Array<Expr>, ?args: Array<FunctionArg>): Field {
+	static function addCtor(pos:Position, exprs:Array<Expr>, ?args:Array<FunctionArg>):Field {
 		return {
 			name: "new",
 			pos: pos,
@@ -56,7 +54,7 @@ class Macros {
 		}
 	}
 
-	public static macro function buildSystem(): Array<Field> {
+	public static macro function buildSystem():Array<Field> {
 		final buildFields = Context.getBuildFields();
 		final pos = Context.currentPos();
 
@@ -64,7 +62,7 @@ class Macros {
 			Context.fatalError("Empty System", pos);
 		}
 
-		final ctorExprs: Array<Expr> = [];
+		final ctorExprs:Array<Expr> = [];
 		var hasUpdate = false;
 		var hasAll = false;
 		var hasInit = false;
@@ -88,7 +86,7 @@ class Macros {
 
 						hasInit = true;
 					default:
-						Context.fatalError("init must be a function!", declrPos);
+						Context.fatalError("init() must be a method!", declrPos);
 				}
 			}
 		}
@@ -103,7 +101,7 @@ class Macros {
 
 						final argExprs = [for (i in 0...f.args.length) macro cast args[$v{i}]];
 
-						var runExpr: Expr;
+						var runExpr:Expr;
 
 						if (hasInit) {
 							runExpr = macro {
@@ -127,13 +125,14 @@ class Macros {
 								args: [
 									{
 										name: "args",
-										type: macro : haxe.Rest<Any>
+										type: macro :haxe.Rest<Any>
 									}
 								],
 								expr: runExpr
 							})
 						});
 					default:
+						Context.fatalError('update() must be a method!', declrPos);
 				}
 			}
 
@@ -145,10 +144,10 @@ class Macros {
 						final args = f.args;
 
 						if (args.length == 0) {
-							Context.fatalError("all() has zero parameters", declrPos);
+							Context.fatalError("all() has zero parameters!", declrPos);
 						}
 
-						var a: FunctionArg;
+						var a:FunctionArg;
 
 						var lastCompIndex = 0;
 
@@ -181,7 +180,7 @@ class Macros {
 							exprs.push(macro cast args[$v{i}]);
 						}
 
-						var runExpr: Expr;
+						var runExpr:Expr;
 
 						if (hasInit) {
 							runExpr = macro {
@@ -219,7 +218,7 @@ class Macros {
 								args: [
 									{
 										name: "args",
-										type: macro : haxe.Rest<Any>
+										type: macro :haxe.Rest<Any>
 									}
 								],
 								expr: runExpr
@@ -228,37 +227,26 @@ class Macros {
 
 						ctorExprs.push(macro $p{["this", "allCompIDs"]} = $v{compIDs});
 					default:
+						Context.fatalError('all() must be a method!', declrPos);
 				}
 			}
 		}
 
 		if (hasUpdate && hasAll) {
-			Context.fatalError("A System cannot have both an update() and an all(..) function!", pos);
+			Context.fatalError("A System cannot have both an update() and an all() function!", pos);
 		}
 
 		buildFields.push(addCtor(pos, ctorExprs));
 
-		final ct = Context.getLocalClass().get();
-
-		Context.onAfterTyping((modules) -> {
-			for (m in modules) {
-				switch (m) {
-					case TClassDecl(c):
-						final c = c.get();
-					default:
-				}
-			}
-		});
-
 		return buildFields;
 	}
 
-	public static macro function buildComponent(): Array<Field> {
+	public static macro function buildComponent():Array<Field> {
 		final t = Context.getLocalType();
 		final buildFields = Context.getBuildFields();
 		final pos = Context.currentPos();
 
-		var ctor: Null<Field>;
+		var ctor:Null<Field>;
 		var onlyPrivate = buildFields.length > 0;
 
 		for (f in buildFields) {
@@ -272,7 +260,7 @@ class Macros {
 		}
 
 		if (ctor == null) {
-			final args: Array<FunctionArg> = [];
+			final args:Array<FunctionArg> = [];
 
 			final assignments = [macro $p{["this", PEACH_ID]} = $v{lastComponentID}];
 
@@ -306,7 +294,7 @@ class Macros {
 		}
 
 		var noForcedAccess = true;
-		var name: String;
+		var name:String;
 
 		switch (t) {
 			case TInst(t, _):
@@ -317,6 +305,7 @@ class Macros {
 
 				ct.meta.add(PEACH_ID, [macro $v{lastComponentID}], ct.pos);
 			default:
+				Context.fatalError("Use 'extends Component' with a regular class!", pos);
 		}
 
 		if (noForcedAccess && onlyPrivate) {
@@ -327,9 +316,9 @@ class Macros {
 		return buildFields;
 	}
 
-	public static macro function buildEntity(): Array<Field> {
+	public static macro function buildEntity():Array<Field> {
 		final buildFields = Context.getBuildFields();
-		var ctor: Null<Field>;
+		var ctor:Null<Field>;
 
 		for (f in buildFields) {
 			if (f.name == "new") {
@@ -343,7 +332,7 @@ class Macros {
 		}
 
 		final componentIDs = new Array<ComponentID>();
-		var ctorBlock: Array<Expr>;
+		var ctorBlock:Array<Expr>;
 
 		switch (ctor.kind) {
 			case FFun(f):

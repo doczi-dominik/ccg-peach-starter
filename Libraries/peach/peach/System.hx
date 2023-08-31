@@ -1,15 +1,13 @@
 package peach;
 
-import peach.Component.ComponentHash;
-import haxe.ds.Either;
 import haxe.macro.Context;
 import haxe.macro.Expr;
-import haxe.macro.Expr.Var;
-import peach.Entity.EntityID;
+import peach.Component.ComponentHash;
 import peach.Component.ComponentID;
+import peach.Entity.EntityID;
 
-using haxe.macro.TypeTools;
 using haxe.macro.ExprTools;
+using haxe.macro.TypeTools;
 
 @:autoBuild(peach.Macros.buildSystem())
 @:allow(peach.World)
@@ -40,7 +38,7 @@ abstract class System {
 			switch (e.expr) {
 				case EConst(_) | EField(_, _, _):
 					if (reassignedTarget) {
-						Context.fatalError("Cannot target more than 1 Entity.\n\nPlease provide only 1 identifier as a target, or leave it off to target the current Entity of the system.",
+						Context.fatalError("Cannot target more than 1 Entity!\n\nPlease provide only 1 identifier as a target, or leave it off to target the current Entity of the system.",
 							pos);
 					}
 
@@ -81,7 +79,10 @@ abstract class System {
 						}),
 						expr: macro @:privateAccess cast _world.comps.get($target, $v{id})
 					});
+				case EMeta(_, _):
 				default:
+					Context.fatalError("Invalid get() expression!\n\nPlease use 'varName = ComponentName' if you are sure the Component exists and is always available and `varName ?? ComponentName` if it may be null.",
+						pos);
 			}
 		}
 
@@ -94,6 +95,7 @@ abstract class System {
 	}
 
 	macro function add(...exprs: Expr): Expr {
+		final pos = Context.currentPos();
 		final args = new Array<Expr>();
 
 		var target: Expr = macro entityID;
@@ -105,14 +107,16 @@ abstract class System {
 					args.push(e);
 				case EConst(_):
 					if (reassignedTarget) {
-						Context.fatalError("Cannot target more than 1 Entity.\n\nPlease provide only 1 constant as a target, or leave it off to target the current Entity of the system.",
+						Context.fatalError("Cannot target more than 1 Entity!\n\nPlease provide only 1 constant as a target, or leave it off to target the current Entity of the system.",
 							Context.currentPos());
 					}
 					target = e;
 					reassignedTarget = true;
 				case ENew(_, _):
 					args.push(e);
+				case EMeta(_, _):
 				default:
+					Context.fatalError("Invalid add() expression!\n\nPlease construct a Component using 'new' or use one stored in a variable", pos);
 			}
 		}
 
@@ -140,7 +144,7 @@ abstract class System {
 						ids.push(id);
 					} catch (_) {
 						if (reassignedTarget) {
-							Context.fatalError("Cannot target more than 1 Entity.\n\nPlease provide only 1 identifier as a target, or leave it off to target the current Entity of the system.",
+							Context.fatalError("Cannot target more than 1 Entity!\n\nPlease provide only 1 identifier as a target, or leave it off to target the current Entity of the system.",
 								pos);
 						}
 
@@ -149,12 +153,14 @@ abstract class System {
 					}
 				case EConst(_):
 					if (reassignedTarget) {
-						Context.fatalError("Cannot target more than 1 Entity.\n\nPlease provide only 1 constant as a target, or leave it off to target the current Entity of the system.",
+						Context.fatalError("Cannot target more than 1 Entity!\n\nPlease provide only 1 constant as a target, or leave it off to target the current Entity of the system.",
 							pos);
 					}
 					target = e;
 					reassignedTarget = true;
+				case EMeta(_, _):
 				default:
+					Context.fatalError("Invalid remove() expression!\n\nRemove a component by specifying its type name.", pos);
 			}
 		}
 
@@ -198,6 +204,7 @@ Try one of the follwing parameter configs:
 
 									toDel.push(id);
 								default:
+									Context.fatalError("Invalid expression in the Removal array!\n\nPlease only use Component class names.", pos);
 							}
 						}
 
@@ -227,16 +234,18 @@ Try one of the follwing parameter configs:
 
 									toAdd.push(e);
 								default:
+									Context.fatalError("Invalid expression in the Removal array!\n\nConstruct a Component using 'new' or reuse an existing Component variable.",
+										pos);
 							}
 						}
 
 						continue;
 					}
 
-					Context.fatalError("Cannot use more than 2 arrays. The first array is used for removal, the second for addition.", pos);
+					Context.fatalError("Cannot use more than 2 arrays!\n\nThe first array is used for removal, the second for addition.", pos);
 				case EConst(_):
 					if (reassignedTarget) {
-						Context.fatalError("Cannot target more than 1 Entity.\n\nPlease provide only 1 constant as a target, or leave it off to target the current Entity of the system.",
+						Context.fatalError("Cannot target more than 1 Entity!\n\nPlease provide only 1 constant as a target, or leave it off to target the current Entity of the system.",
 							pos);
 					}
 					target = e;

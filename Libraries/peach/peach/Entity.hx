@@ -1,9 +1,8 @@
 package peach;
 
-import haxe.macro.Expr;
-import haxe.macro.Context;
 import haxe.Rest;
-import haxe.ds.IntMap;
+import haxe.macro.Context;
+import haxe.macro.Expr;
 import peach.Component;
 
 using haxe.macro.TypeTools;
@@ -59,6 +58,8 @@ class Entity {
 								params: [TPType(type.toComplexType())]
 							});
 						default:
+							Context.fatalError("Invalid get() expression! Please use 'varName = ComponentName' if you are sure the Component exists and is always available and `varName ?? ComponentName` if it may be null.",
+								pos);
 							null;
 					}
 
@@ -69,7 +70,11 @@ class Entity {
 						type: t,
 						expr: macro @:privateAccess cast _world.comps.get(_entityID, $v{id})
 					});
+				case EMeta(_, _):
 				default:
+					Context.warning('$e', pos);
+					Context.fatalError("Invalid get() expression!\n\nPlease use 'varName = ComponentName' if you are sure the Component exists and is always available and `varName ?? ComponentName` if it may be null.",
+						pos);
 			}
 		}
 
